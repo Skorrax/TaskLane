@@ -1,0 +1,23 @@
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor/IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temp/logs
+*.log
+*.tmp
+
+# Dependencies
+node_modules/
+
+# Chrome extension packaging
+*.pem
+*.crx
+*.zip

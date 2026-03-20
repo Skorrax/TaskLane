@@ -48,9 +48,28 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-// Open side panel on extension icon click
-chrome.action.onClicked.addListener((tab) => {
-  chrome.sidePanel.open({ tabId: tab.id });
+// Track side panel open state per tab
+const panelOpenTabs = new Set();
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'sidepanel') {
+    const tabId = port.sender.tab?.id;
+    if (tabId) panelOpenTabs.add(tabId);
+    port.onDisconnect.addListener(() => {
+      if (tabId) panelOpenTabs.delete(tabId);
+    });
+  }
+});
+
+// Toggle side panel on extension icon click
+chrome.action.onClicked.addListener(async (tab) => {
+  if (panelOpenTabs.has(tab.id)) {
+    await chrome.sidePanel.setOptions({ tabId: tab.id, enabled: false });
+    panelOpenTabs.delete(tab.id);
+    await chrome.sidePanel.setOptions({ tabId: tab.id, enabled: true });
+  } else {
+    chrome.sidePanel.open({ tabId: tab.id });
+  }
 });
 
 // Update on install/startup

@@ -1,13 +1,17 @@
 const STORAGE_KEY = 'taskboard_data';
 
+// Notify background script that side panel is open (disconnect signals close)
+chrome.runtime.connect({ name: 'sidepanel' });
+
 let state = null;
+let showDone = false;
 
 function defaultState() {
   return {
     columns: [
-      { id: genId(), title: 'Zu erledigen', tasks: [] },
-      { id: genId(), title: 'In Bearbeitung', tasks: [] },
-      { id: genId(), title: 'Erledigt', tasks: [] },
+      { id: genId(), title: 'Zu erledigen', tasks: [], collapsed: false },
+      { id: genId(), title: 'In Bearbeitung', tasks: [], collapsed: false },
+      { id: genId(), title: 'Erledigt', tasks: [], collapsed: false },
     ]
   };
 }
@@ -70,18 +74,26 @@ async function render() {
 function renderColumn(col) {
   const el = document.createElement('div');
   el.className = 'column';
+  if (col.collapsed) el.classList.add('collapsed');
   el.dataset.colId = col.id;
 
   const activeTasks = col.tasks.filter(t => !t.done).length;
 
+  // Header
   const header = document.createElement('div');
   header.className = 'column-header';
+
+  const toggle = document.createElement('span');
+  toggle.className = 'col-toggle';
+  toggle.innerHTML = '&#x25BC;';
 
   const titleInput = document.createElement('input');
   titleInput.className = 'col-title';
   titleInput.value = col.title;
   titleInput.addEventListener('change', () => renameColumn(col.id, titleInput.value));
   titleInput.addEventListener('keydown', e => { if (e.key === 'Enter') titleInput.blur(); });
+  titleInput.addEventListener('click', e => e.stopPropagation());
+  titleInput.addEventListener('focus', e => e.stopPropagation());
 
   const count = document.createElement('span');
   count.className = 'task-count';
@@ -93,14 +105,19 @@ function renderColumn(col) {
   delBtn.className = 'btn btn-icon danger';
   delBtn.title = 'Spalte löschen';
   delBtn.innerHTML = '&#x2715;';
-  delBtn.addEventListener('click', () => deleteColumn(col.id));
+  delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteColumn(col.id); });
   actions.appendChild(delBtn);
 
+  header.appendChild(toggle);
   header.appendChild(titleInput);
   header.appendChild(count);
   header.appendChild(actions);
   el.appendChild(header);
 
+  // Toggle collapse on header click
+  header.addEventListener('click', () => toggleCollapse(col.id));
+
+  // Body
   const body = document.createElement('div');
   body.className = 'column-body';
   body.dataset.colId = col.id;
@@ -117,9 +134,11 @@ function renderColumn(col) {
     moveTask(taskId, col.id);
   });
 
-  col.tasks.forEach(task => body.appendChild(renderTask(task, col.id)));
+  const visibleTasks = showDone ? col.tasks : col.tasks.filter(t => !t.done);
+  visibleTasks.forEach(task => body.appendChild(renderTask(task, col.id)));
   el.appendChild(body);
 
+  // Footer
   const footer = document.createElement('div');
   footer.className = 'column-footer';
   const addTaskBtn = document.createElement('button');
@@ -249,8 +268,14 @@ async function submitInlineForm(colId) {
 
 // ---- Column actions ----
 
+async function toggleCollapse(colId) {
+  const col = state.columns.find(c => c.id === colId);
+  if (col) col.collapsed = !col.collapsed;
+  await render();
+}
+
 async function addColumn() {
-  state.columns.push({ id: genId(), title: 'Neue Spalte', tasks: [] });
+  state.columns.push({ id: genId(), title: 'Neue Spalte', tasks: [], collapsed: false });
   await render();
   const inputs = document.querySelectorAll('.col-title');
   const last = inputs[inputs.length - 1];
@@ -398,6 +423,12 @@ document.getElementById('editModal').addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('editModal').style.display === 'flex') closeEditModal();
+});
+
+// Show/hide done tasks
+document.getElementById('showDone').addEventListener('change', (e) => {
+  showDone = e.target.checked;
+  render();
 });
 
 // Init
