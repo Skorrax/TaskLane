@@ -3,15 +3,106 @@ const STORAGE_KEY = 'taskboard_data';
 // Notify background script that side panel is open (disconnect signals close)
 chrome.runtime.connect({ name: 'sidepanel' });
 
+// ---- i18n ----
+
+const translations = {
+  de: {
+    showDone: 'Erledigte anzeigen',
+    editTask: 'Aufgabe bearbeiten',
+    labelTitle: 'Titel *',
+    placeholderTitle: 'Titel eingeben',
+    labelDesc: 'Beschreibung',
+    placeholderDesc: 'Beschreibung (optional)',
+    labelDue: 'Fälligkeitsdatum',
+    labelColumn: 'Spalte',
+    done: 'Erledigt',
+    notDone: 'Nicht erledigt',
+    cancel: 'Abbrechen',
+    save: 'Speichern',
+    create: 'Erstellen',
+    defaultCol1: 'Zu erledigen',
+    defaultCol2: 'In Bearbeitung',
+    defaultCol3: 'Erledigt',
+    newColumn: 'Neue Spalte',
+    addColumn: 'Neue Spalte',
+    addTask: 'Aufgabe hinzufügen',
+    deleteColumn: 'Spalte löschen',
+    edit: 'Bearbeiten',
+    delete: 'Löschen',
+    placeholderDue: 'Datum & Uhrzeit wählen',
+    confirmDeleteCol: 'Spalte "{title}" wirklich löschen?',
+    confirmDeleteColTasks: 'Spalte "{title}" mit {count} Aufgabe(n) wirklich löschen?',
+    confirmDeleteTask: 'Aufgabe "{title}" wirklich löschen?',
+  },
+  en: {
+    showDone: 'Show completed',
+    editTask: 'Edit task',
+    labelTitle: 'Title *',
+    placeholderTitle: 'Enter title',
+    labelDesc: 'Description',
+    placeholderDesc: 'Description (optional)',
+    labelDue: 'Due date',
+    labelColumn: 'Column',
+    done: 'Done',
+    notDone: 'Not done',
+    cancel: 'Cancel',
+    save: 'Save',
+    create: 'Create',
+    defaultCol1: 'To Do',
+    defaultCol2: 'In Progress',
+    defaultCol3: 'Done',
+    newColumn: 'New Column',
+    addColumn: 'New Column',
+    addTask: 'Add task',
+    deleteColumn: 'Delete column',
+    edit: 'Edit',
+    delete: 'Delete',
+    placeholderDue: 'Select date & time',
+    confirmDeleteCol: 'Really delete column "{title}"?',
+    confirmDeleteColTasks: 'Really delete column "{title}" with {count} task(s)?',
+    confirmDeleteTask: 'Really delete task "{title}"?',
+  },
+};
+
+const lang = chrome.i18n.getUILanguage().startsWith('de') ? 'de' : 'en';
+const flatpickrLocale = lang === 'de' ? 'de' : 'default';
+
+function t(key, params) {
+  let str = translations[lang][key] || translations.en[key] || key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      str = str.replace(`{${k}}`, v);
+    }
+  }
+  return str;
+}
+
+function applyStaticTranslations() {
+  document.getElementById('showDoneLabel').textContent = t('showDone');
+  document.getElementById('editModalTitle').textContent = t('editTask');
+  document.getElementById('editTitleLabel').textContent = t('labelTitle');
+  document.getElementById('editTitle').placeholder = t('placeholderTitle');
+  document.getElementById('editDescLabel').textContent = t('labelDesc');
+  document.getElementById('editDesc').placeholder = t('placeholderDesc');
+  document.getElementById('editDueLabel').textContent = t('labelDue');
+  document.getElementById('editColumnLabel').textContent = t('labelColumn');
+  document.getElementById('editDoneLabel').textContent = t('done');
+  document.getElementById('btnCancelEdit').textContent = t('cancel');
+  document.getElementById('btnSaveEdit').textContent = t('save');
+  document.documentElement.lang = lang;
+}
+
+// ---- State ----
+
 let state = null;
 let showDone = false;
 
 function defaultState() {
   return {
     columns: [
-      { id: genId(), title: 'Zu erledigen', tasks: [], collapsed: false },
-      { id: genId(), title: 'In Bearbeitung', tasks: [], collapsed: false },
-      { id: genId(), title: 'Erledigt', tasks: [], collapsed: false },
+      { id: genId(), title: t('defaultCol1'), tasks: [], collapsed: false },
+      { id: genId(), title: t('defaultCol2'), tasks: [], collapsed: false },
+      { id: genId(), title: t('defaultCol3'), tasks: [], collapsed: false },
     ]
   };
 }
@@ -64,7 +155,7 @@ async function render() {
 
   const addBtn = document.createElement('button');
   addBtn.className = 'btn btn-add-column';
-  addBtn.innerHTML = '<span>+</span> Neue Spalte';
+  addBtn.innerHTML = `<span>+</span> ${t('addColumn')}`;
   addBtn.addEventListener('click', () => addColumn());
   board.appendChild(addBtn);
 
@@ -103,7 +194,7 @@ function renderColumn(col) {
   actions.className = 'col-actions';
   const delBtn = document.createElement('button');
   delBtn.className = 'btn btn-icon danger';
-  delBtn.title = 'Spalte löschen';
+  delBtn.title = t('deleteColumn');
   delBtn.innerHTML = '&#x2715;';
   delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteColumn(col.id); });
   actions.appendChild(delBtn);
@@ -143,7 +234,7 @@ function renderColumn(col) {
   footer.className = 'column-footer';
   const addTaskBtn = document.createElement('button');
   addTaskBtn.className = 'btn btn-add-task';
-  addTaskBtn.innerHTML = '<span>+</span> Aufgabe hinzufügen';
+  addTaskBtn.innerHTML = `<span>+</span> ${t('addTask')}`;
   addTaskBtn.addEventListener('click', () => showInlineForm(col.id, addTaskBtn));
   footer.appendChild(addTaskBtn);
   el.appendChild(footer);
@@ -171,11 +262,11 @@ function renderTask(task, colId) {
   html += `<div class="task-meta">`;
   html += task.due ? `<span class="task-due">&#128197; ${formatDate(task.due)}</span>` : '<span></span>';
   html += `<div class="task-actions">
-    <button class="btn btn-icon btn-toggle" data-id="${task.id}" title="${task.done ? 'Nicht erledigt' : 'Erledigt'}">
+    <button class="btn btn-icon btn-toggle" data-id="${task.id}" title="${task.done ? t('notDone') : t('done')}">
       ${task.done ? '&#x21A9;' : '&#x2713;'}
     </button>
-    <button class="btn btn-icon btn-edit" data-id="${task.id}" title="Bearbeiten">&#x270E;</button>
-    <button class="btn btn-icon danger btn-delete" data-id="${task.id}" title="Löschen">&#x2715;</button>
+    <button class="btn btn-icon btn-edit" data-id="${task.id}" title="${t('edit')}">&#x270E;</button>
+    <button class="btn btn-icon danger btn-delete" data-id="${task.id}" title="${t('delete')}">&#x2715;</button>
   </div></div>`;
 
   card.innerHTML = html;
@@ -198,11 +289,11 @@ function showInlineForm(colId, btn) {
 
   const titleInput = document.createElement('input');
   titleInput.type = 'text';
-  titleInput.placeholder = 'Titel *';
+  titleInput.placeholder = t('labelTitle');
   titleInput.id = `newTitle_${colId}`;
 
   const descInput = document.createElement('textarea');
-  descInput.placeholder = 'Beschreibung (optional)';
+  descInput.placeholder = t('placeholderDesc');
   descInput.id = `newDesc_${colId}`;
 
   const row = document.createElement('div');
@@ -212,16 +303,16 @@ function showInlineForm(colId, btn) {
   dueInput.type = 'text';
   dueInput.id = `newDue_${colId}`;
   dueInput.style.flex = '1';
-  dueInput.placeholder = 'Datum & Uhrzeit wählen';
+  dueInput.placeholder = t('placeholderDue');
 
   const createBtn = document.createElement('button');
   createBtn.className = 'btn btn-primary';
-  createBtn.textContent = 'Erstellen';
+  createBtn.textContent = t('create');
   createBtn.addEventListener('click', () => submitInlineForm(colId));
 
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'btn btn-secondary';
-  cancelBtn.textContent = 'Abbrechen';
+  cancelBtn.textContent = t('cancel');
   cancelBtn.addEventListener('click', () => render());
 
   row.appendChild(dueInput);
@@ -241,7 +332,7 @@ function showInlineForm(colId, btn) {
   descInput.addEventListener('keydown', e => { if (e.key === 'Escape') render(); });
 
   flatpickr(dueInput, {
-    locale: 'de',
+    locale: flatpickrLocale,
     enableTime: true,
     time_24hr: true,
     dateFormat: 'Y-m-d H:i',
@@ -275,7 +366,7 @@ async function toggleCollapse(colId) {
 }
 
 async function addColumn() {
-  state.columns.push({ id: genId(), title: 'Neue Spalte', tasks: [], collapsed: false });
+  state.columns.push({ id: genId(), title: t('newColumn'), tasks: [], collapsed: false });
   await render();
   const inputs = document.querySelectorAll('.col-title');
   const last = inputs[inputs.length - 1];
@@ -292,8 +383,8 @@ async function deleteColumn(colId) {
   const col = state.columns.find(c => c.id === colId);
   if (!col) return;
   const msg = col.tasks.length
-    ? `Spalte "${col.title}" mit ${col.tasks.length} Aufgabe(n) wirklich löschen?`
-    : `Spalte "${col.title}" wirklich löschen?`;
+    ? t('confirmDeleteColTasks', { title: col.title, count: col.tasks.length })
+    : t('confirmDeleteCol', { title: col.title });
   if (!confirm(msg)) return;
   state.columns = state.columns.filter(c => c.id !== colId);
   await render();
@@ -315,7 +406,7 @@ async function deleteTask(taskId) {
     const task = col.tasks.find(t => t.id === taskId);
     if (task) { taskTitle = task.title; break; }
   }
-  if (!confirm(`Aufgabe "${taskTitle}" wirklich löschen?`)) return;
+  if (!confirm(t('confirmDeleteTask', { title: taskTitle }))) return;
   for (const col of state.columns) {
     const idx = col.tasks.findIndex(t => t.id === taskId);
     if (idx !== -1) { col.tasks.splice(idx, 1); break; }
@@ -367,7 +458,7 @@ function openEditModal(taskId) {
   document.getElementById('editTitle').focus();
 
   flatpickr('#editDue', {
-    locale: 'de',
+    locale: flatpickrLocale,
     enableTime: true,
     time_24hr: true,
     dateFormat: 'Y-m-d H:i',
@@ -433,6 +524,7 @@ document.getElementById('showDone').addEventListener('change', (e) => {
 
 // Init
 (async () => {
+  applyStaticTranslations();
   state = await loadState();
   await render();
 })();

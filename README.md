@@ -12,6 +12,7 @@ A lightweight Chrome extension for managing personal tasks in a Kanban-style boa
 - **Badge notifications** — extension icon shows a count of overdue tasks
 - **Hide completed tasks** — finished tasks are hidden by default, togglable via a checkbox
 - **Persistent storage** — all data is stored locally in the browser via `chrome.storage`
+- **Multi-language** — supports German and English, automatically detected from Chrome's language setting
 - **Dark theme** — clean, GitHub-inspired dark UI
 
 ## Installation
@@ -24,14 +25,14 @@ A lightweight Chrome extension for managing personal tasks in a Kanban-style boa
 
 ## Usage
 
-- **Add a section** — click "+ Neue Spalte" at the bottom
-- **Add a task** — click "+ Aufgabe hinzufügen" within a section
+- **Add a section** — click "+ New Column" / "+ Neue Spalte" at the bottom
+- **Add a task** — click "+ Add task" / "+ Aufgabe hinzufügen" within a section
 - **Edit a task** — hover over a task and click the edit icon
 - **Complete a task** — hover and click the checkmark icon
 - **Delete a task/section** — hover and click the X icon (with confirmation)
 - **Collapse a section** — click the section header
 - **Move a task** — drag it to a different section, or change the section in the edit dialog
-- **Show/hide completed tasks** — use the "Erledigte anzeigen" checkbox in the header
+- **Show/hide completed tasks** — use the "Show completed" / "Erledigte anzeigen" checkbox in the header
 
 ## Third-Party Libraries
 
