@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate TaskLane Icons</title></head>
+<body style="background:#222;color:#fff;font-family:sans-serif;padding:20px;">
+<h2>TaskLane Icon Generator</h2>
+<p>Click each button to download the icon.</p>
+<div id="previews" style="display:flex;gap:20px;margin:20px 0;align-items:end;"></div>
+<script>
+const sizes = [16, 48, 128];
+
+function drawIcon(ctx, s) {
+  const r = s / 128; // scale factor
+
+  // Background rounded rect
+  const radius = 20 * r;
+  ctx.beginPath();
+  ctx.moveTo(radius, 0);
+  ctx.lineTo(s - radius, 0);
+  ctx.quadraticCurveTo(s, 0, s, radius);
+  ctx.lineTo(s, s - radius);
+  ctx.quadraticCurveTo(s, s, s - radius, s);
+  ctx.lineTo(radius, s);
+  ctx.quadraticCurveTo(0, s, 0, s - radius);
+  ctx.lineTo(0, radius);
+  ctx.quadraticCurveTo(0, 0, radius, 0);
+  ctx.closePath();
+
+  // Gradient background
+  const grad = ctx.createLinearGradient(0, 0, s, s);
+  grad.addColorStop(0, '#1a1e2e');
+  grad.addColorStop(1, '#0d1117');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Three kanban columns
+  const colWidth = 22 * r;
+  const colGap = 8 * r;
+  const totalW = 3 * colWidth + 2 * colGap;
+  const startX = (s - totalW) / 2;
+  const topY = 28 * r;
+  const colRadius = 4 * r;
+
+  const columns = [
+    { color: '#58a6ff', cards: [0.55, 0.35] },       // blue - 2 cards
+    { color: '#f0883e', cards: [0.35, 0.45, 0.30] },  // orange - 3 cards
+    { color: '#238636', cards: [0.40] },               // green - 1 card
+  ];
+
+  columns.forEach((col, i) => {
+    const x = startX + i * (colWidth + colGap);
+    const colHeight = 76 * r;
+
+    // Column background
+    ctx.beginPath();
+    ctx.roundRect(x, topY, colWidth, colHeight, colRadius);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fill();
+
+    // Column header line
+    const headerH = 3 * r;
+    ctx.beginPath();
+    ctx.roundRect(x + 3 * r, topY + 4 * r, colWidth - 6 * r, headerH, 1.5 * r);
+    ctx.fillStyle = col.color;
+    ctx.fill();
+
+    // Task cards
+    let cardY = topY + 12 * r;
+    const cardPad = 3 * r;
+    col.cards.forEach(h => {
+      const cardH = h * colHeight * 0.55;
+      ctx.beginPath();
+      ctx.roundRect(x + cardPad, cardY, colWidth - 2 * cardPad, cardH, 2 * r);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fill();
+
+      // Small line on card
+      ctx.beginPath();
+      ctx.roundRect(x + cardPad + 3 * r, cardY + 3 * r, (colWidth - 2 * cardPad) * 0.6, 2 * r, 1 * r);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fill();
+
+      cardY += cardH + 3 * r;
+    });
+  });
+
+  // "TL" text at bottom
+  if (s >= 48) {
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = `bold ${11 * r}px -apple-system, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('TL', s / 2, s - 10 * r);
+  }
+}
+
+const container = document.getElementById('previews');
+
+sizes.forEach(size => {
+  const div = document.createElement('div');
+  div.style.textAlign = 'center';
+
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  drawIcon(ctx, size);
+
+  // Show preview (scaled up for small icons)
+  const previewSize = Math.max(size, 64);
+  canvas.style.width = previewSize + 'px';
+  canvas.style.height = previewSize + 'px';
+  canvas.style.imageRendering = 'pixelated';
+  div.appendChild(canvas);
+
+  const br = document.createElement('br');
+  div.appendChild(br);
+
+  const btn = document.createElement('button');
+  btn.textContent = `Download ${size}x${size}`;
+  btn.style.cssText = 'margin-top:8px;padding:6px 12px;cursor:pointer;';
+  btn.onclick = () => {
+    const a = document.createElement('a');
+    a.download = `icon${size}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  };
+  div.appendChild(btn);
+
+  container.appendChild(div);
+});
+</script>
+</body>
+</html>
