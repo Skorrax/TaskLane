@@ -15,6 +15,9 @@ A lightweight Chrome extension for managing personal tasks in a Kanban-style boa
 - **Multi-language** — supports German and English, automatically detected from Chrome's language setting
 - **Dark theme** — clean, GitHub-inspired dark UI
 
+<img width="400" height="548" alt="image" src="https://github.com/user-attachments/assets/f3ed7a4e-33eb-445e-aa5d-5bdaf7f9954e" />
+
+
 ## Installation
 
 1. Download or clone this repository
