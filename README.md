@@ -10,6 +10,8 @@ A lightweight Chrome extension for managing personal tasks in a Kanban-style boa
 - **Due dates with time** — set date and time for task deadlines
 - **Overdue highlighting** — tasks past their due date are visually marked
 - **Badge notifications** — extension icon shows a count of overdue tasks
+<img width="64" height="58" alt="image" src="https://github.com/user-attachments/assets/8c2f3815-7a36-4013-b507-bb426d099272" />
+
 - **Hide completed tasks** — finished tasks are hidden by default, togglable via a checkbox
 - **Persistent storage** — all data is stored locally in the browser via `chrome.storage`
 - **Multi-language** — supports German and English, automatically detected from Chrome's language setting
